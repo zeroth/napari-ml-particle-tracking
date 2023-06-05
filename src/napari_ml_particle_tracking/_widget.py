@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING
 
 from magicgui import magic_factory
 from qtpy.QtWidgets import QHBoxLayout, QPushButton, QWidget
+from particle_tracking.data import Data2D, DataLoader, Dataset
+from particle_tracking.model import Model
 
 if TYPE_CHECKING:
     import napari
