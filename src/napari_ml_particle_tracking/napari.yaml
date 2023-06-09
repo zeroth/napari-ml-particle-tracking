@@ -2,20 +2,10 @@ name: napari-ml-particle-tracking
 display_name: Particle Tracking ML
 contributions:
   commands:
-    - id: napari-ml-particle-tracking.make_qwidget
-      python_name: napari_ml_particle_tracking._widget:ExampleQWidget
-      title: Make example QWidget
     - id: napari-ml-particle-tracking.make_magic_widget
-      python_name: napari_ml_particle_tracking._widget:example_magic_widget
-      title: Make example magic widget
-    - id: napari-ml-particle-tracking.make_func_widget
-      python_name: napari_ml_particle_tracking._widget:example_function_widget
-      title: Make example function widget
+      python_name: napari_ml_particle_tracking._widget:ml_interaction
+      title: Particle Tracking with ML
   widgets:
-    - command: napari-ml-particle-tracking.make_qwidget
-      display_name: Example QWidget
     - command: napari-ml-particle-tracking.make_magic_widget
-      display_name: Example Magic Widget
-    - command: napari-ml-particle-tracking.make_func_widget
-      autogenerate: true
-      display_name: Example Function Widget
+      display_name: Particle Tracking with ML
+   
