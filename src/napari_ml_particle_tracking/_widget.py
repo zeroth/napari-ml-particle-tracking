@@ -12,8 +12,8 @@ from magicgui import magic_factory
 from qtpy.QtWidgets import QVBoxLayout, QPushButton, QWidget, QFormLayout, QComboBox, QLayout
 # from magicgui.widgets import Container
 
-if TYPE_CHECKING:
-    import napari
+# if TYPE_CHECKING:
+import napari
 
 @magic_factory (
         call_button="Run",
@@ -68,12 +68,26 @@ class MlInteractionQWidget(QWidget):
 
     def _on_click(self):
         print("napari has", len(self.viewer.layers), "layers")
+        img_layer = self.viewer.layers[0].data
+        zeros = np.zeros(img_layer.shape, dtype='uint16')
+        zeros[10:20, 20:30] = 255
+        self.viewer.add_labels(zeros)
 
     def _test(self):
         print("test")
     
     def _test2(self):
-        print("test2")
+        
+        for l in self.viewer.layers:
+            print(type(l))
+            print("-----------")
+            print("dtype", l.dtype)
+            if isinstance(l, napari.layers.Image):
+                print("this is image")
+            if isinstance(l, napari.layers.Labels):
+                print("this is Labels")
+            
+            
 
 
 
