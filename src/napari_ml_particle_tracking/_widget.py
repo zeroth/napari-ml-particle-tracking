@@ -49,27 +49,31 @@ def ml_interaction(image_layer: "napari.types.ImageData",
         # zeros[:, 10:20, 20:30] = 255
         # return zeros
 
-# class MlInteractionQWidget(QWidget):
-#     # your QWidget.__init__ can optionally request the napari viewer instance
-#     # in one of two ways:
-#     # 1. use a parameter called `napari_viewer`, as done here
-#     # 2. use a type annotation of 'napari.viewer.Viewer' for any parameter
-#     def __init__(self, napari_viewer):
-#         super().__init__()
-#         self.viewer = napari_viewer
+class MlInteractionQWidget(QWidget):
+    # your QWidget.__init__ can optionally request the napari viewer instance
+    # in one of two ways:
+    # 1. use a parameter called `napari_viewer`, as done here
+    # 2. use a type annotation of 'napari.viewer.Viewer' for any parameter
+    def __init__(self, napari_viewer):
+        super().__init__()
+        self.viewer = napari_viewer
 
-#         btn = QPushButton("Click me!")
-#         btn.clicked.connect(self._on_click)
+        btn = QPushButton("Click me!")
+        btn.clicked.connect(self._on_click)
 
-#         self.setLayout(QVBoxLayout())
-#         self.layout().addWidget(btn)
-#         napari_viewer.layers.events.changed.connect(self._test)
+        self.setLayout(QVBoxLayout())
+        self.layout().addWidget(btn)
+        napari_viewer.layers.events.changed.connect(self._test)
+        napari_viewer.layers.events.inserted.connect(self._test2)
 
-#     def _on_click(self):
-#         print("napari has", len(self.viewer.layers), "layers")
+    def _on_click(self):
+        print("napari has", len(self.viewer.layers), "layers")
 
-#     def _test(self):
-#         print("test")
+    def _test(self):
+        print("test")
+    
+    def _test2(self):
+        print("test2")
 
 
 
