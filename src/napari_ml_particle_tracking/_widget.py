@@ -3,7 +3,7 @@ import numpy as np
 from magicgui import magic_factory
 from qtpy.QtWidgets import QVBoxLayout, QPushButton, QWidget, QFormLayout, QComboBox, QHBoxLayout, QSpinBox, QTableView
 from qtpy.QtGui import QStandardItemModel
-from qtpy.QtCore import Signal
+from qtpy.QtCore import Signal, QItemSelectionModel, QModelIndex, Qt
 # from magicgui.widgets import Container
 from pathlib import Path
 
@@ -73,7 +73,7 @@ class SegmentationWidget(NapariLayersWidget):
         btn_layout.addWidget(self.btn_train)
         
         
-        self.layout().addWidget(btn_layout)
+        self.layout().addRow(btn_layout)
 
         # init widget
         # disable the train buttnon and sb_epochs if there is no mask layer
@@ -157,13 +157,10 @@ class TrackingWidget(NapariLayersWidget):
         btn_layout = QHBoxLayout()
         btn_layout.addWidget(self.btn_track)
 
-        self.layout().addWidget(btn_layout)
-
-        self.table = QTableView()
-        self.table_model = QStandardItemModel()
-        self.table.setModel(self.table_model)
-        
-        self.layout().addWidget(self.table)
+        self.layout().addRow(btn_layout)
+        self.table = None
+        self.table_model = None
+        self.sl_min_time = None
 
         # init btns
         self.btn_track.clicked.connect(self.track)
@@ -202,6 +199,28 @@ class TrackingWidget(NapariLayersWidget):
                 track_objs.append(track)
                 tracks += track.to_list()
                 points += track.to_points_list()
+        self.tracks = track_objs
+        self.add_table()
+    
+    def add_table(self):
+        print(f"tracks : {len(self.tracks)}")
+        self.table = QTableView()
+        self.table_model = QStandardItemModel(len(self.tracks), 2)
+        self.table.setModel(self.table_model)
+        self.table_model.setHeaderData(0, Qt.Orientation.Horizontal, "Track ID");
+        self.table_model.setHeaderData(1, Qt.Orientation.Horizontal, "Time Points");
+
+
+        selection_model = QItemSelectionModel(self.table_model)
+        self.table.setSelectionModel(selection_model)
+        self.layout().addWidget(self.table)
+
+        for row, track in enumerate(self.tracks):
+            self.table_model.insertRows(row, 1)
+            self.table_model.setData(self.table_model.index(row, 0, QModelIndex()), track.id)
+            self.table_model.setData(self.table_model.index(row, 1, QModelIndex()), len(track))
+
+
 
 class PluginWrapper(QWidget):
     def __init__(self, napari_viewer : napari.viewer.Viewer):
@@ -214,3 +233,5 @@ class PluginWrapper(QWidget):
         self.segmentation_widget = SegmentationWidget(napari_viewer=napari_viewer)
         self.vbox_layout.addWidget(self.segmentation_widget)
 
+        self.tracking_widget = TrackingWidget(napari_viewer=napari_viewer)
+        self.vbox_layout.addWidget(self.tracking_widget)
