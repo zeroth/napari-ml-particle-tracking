@@ -2,15 +2,11 @@ name: napari-ml-particle-tracking
 display_name: Particle Tracking ML
 contributions:
   commands:
-    - id: napari-ml-particle-tracking.make_magic_widget
-      python_name: napari_ml_particle_tracking._widget:ml_interaction
-      title: Particle Tracking with ML
-    - id: napari-ml-particle-tracking.make_widget
-      python_name: napari_ml_particle_tracking._widget:MlInteractionQWidget
-      title: Particle Tracking with ML
+    - id: napari-ml-particle-tracking.make_qt_widget
+      python_name: napari_ml_particle_tracking._widget:PluginWrapper
+      title: Particle Segmentation
+
   widgets:
-    - command: napari-ml-particle-tracking.make_magic_widget
-      display_name: Particle Tracking with ML
-    - command: napari-ml-particle-tracking.make_widget
-      display_name: Particle Tracking with ML (QWdiget)
-   
+    - command: napari-ml-particle-tracking.make_qt_widget
+      display_name: Particle Segmentation
+    
