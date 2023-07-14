@@ -88,15 +88,15 @@ class TrackingWidget(NapariLayersWidget):
         btn_layout = QHBoxLayout()
         btn_layout.addWidget(self.btn_track)
 
-        self.layout().addRow("Search Range", self.sb_search_range)
-        self.layout().addRow("Memory", self.sb_memory)
-        self.layout().addRow(btn_layout)
+        self.layer_layout.addRow("Search Range", self.sb_search_range)
+        self.layer_layout.addRow("Memory", self.sb_memory)
+        self.layout().addLayout(btn_layout)
         self.table = None
         self.table_model = None
         self.sl_min_time = None
 
         self.table_widget = TrackTableFilterWidget(self.display_tracks)
-        self.layout().addRow(self.table_widget)
+        self.layout().addWidget(self.table_widget)
         self.table_widget.track_clicked.connect(self._track_selected)
         self.table_widget.track_filtered.connect(self._track_filtered)
 

@@ -7,7 +7,7 @@ from typing import List, Optional, Tuple
 import matplotlib
 import matplotlib.style as mplstyle
 import numpy as np
-from ._base_widget import NapariLayersWidget
+from ._base_widget import NapariLayersWidget,BaseWidget
 # Auto step finder
 import particle_tracking.stepfindCore as core
 import particle_tracking.stepfindInOut as sio
@@ -93,9 +93,9 @@ class IntensityPlotWidget(BaseNapariMPLWidget):
         self.canvas.draw()
 
 
-class StepFinderWidget(QWidget):
-    def __init__(self, napari_viewer : napari.viewer.Viewer) -> None:
-        super().__init__()
+class StepFinderWidget(BaseWidget):
+    def __init__(self, napari_viewer : napari.viewer.Viewer, parent:QWidget=None) -> None:
+        super().__init__(parent)
         self.setLayout(QVBoxLayout())
         self.btn_step_find = QPushButton("Find Steps")
         self.btn_step_find.clicked.connect(self.detect_steps)
