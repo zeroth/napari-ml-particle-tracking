@@ -8,17 +8,16 @@ import matplotlib
 import matplotlib.style as mplstyle
 import numpy as np
 from ._base_widget import NapariLayersWidget,BaseWidget
-# Auto step finder
-import particle_tracking.stepfindCore as core
-import particle_tracking.stepfindInOut as sio
-import particle_tracking.stepfindTools as st
+from dataclasses import dataclass
 
 # https://davidmathlogic.com/colorblind #  IBM Design Library
-COLOR_1 = "#DC267F"
-COLOR_2 = "#648FFF"
-COLOR_3 = "#785EF0"
-COLOR_4 = "#FE6100"
-COLOR_5 = "#FFB000"
+
+colors = dict(
+    COLOR_1 = "#DC267F",
+    COLOR_2 = "#648FFF",
+    COLOR_3 = "#785EF0",
+    COLOR_4 = "#FE6100",
+    COLOR_5 = "#FFB000")
 
 class IntensityPlotWidget(BaseNapariMPLWidget):
     
@@ -54,7 +53,7 @@ class IntensityPlotWidget(BaseNapariMPLWidget):
         with mplstyle.context(self.mpl_style_sheet_path):
             self.axes.clear()
 
-    def draw(self, data, label, color=COLOR_1, multile=False) -> None:
+    def draw(self, data, label, color=colors['COLOR_1'], multile=False) -> None:
         from matplotlib.legend_handler import HandlerTuple
         if len(data):
             self.data = data

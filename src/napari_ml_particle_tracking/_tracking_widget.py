@@ -11,7 +11,7 @@ from qtpy.QtWidgets import QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QLabe
 from qtpy.QtGui import QStandardItemModel
 from qtpy.QtCore import Signal, QItemSelectionModel, QModelIndex, Qt
 from ._base_widget import NapariLayersWidget
-from ._intensity_plot import IntensityPlotWidget
+from ._intensity_plot import IntensityPlotWidget, colors
 import pandas as pd
 
 TIME_POINT_SL_MIN = 1
@@ -83,7 +83,9 @@ class TrackingWidget(NapariLayersWidget):
         self.single_display_track = []
         self.single_display_track_layer = None
         self.tracked_df = pd.DataFrame()
-        self.current_track_layer = None
+        self.selected_track_layer = None
+        self.selected_track_id = None
+
         self.sb_search_range = QDoubleSpinBox()
         self.sb_search_range.setMinimum(1.0)
         self.sb_search_range.setValue(2.0)
@@ -129,8 +131,8 @@ class TrackingWidget(NapariLayersWidget):
         self.openClicked.connect(self.open)
         
         self.btn_plot_all.clicked.connect(self.plot_all)
-        self.btn_plot_all.clicked.connect(self.fit_all)
-        self.btn_plot_all.clicked.connect(self.fit_selected)
+        self.btn_fit_all.clicked.connect(self.fit_all)
+        self.btn_fit_selected.clicked.connect(self.fit_selected)
         
         self.update_btns()
 
@@ -189,8 +191,8 @@ class TrackingWidget(NapariLayersWidget):
         return None
 
     def show_tracks_layer(self, state):
-        if self.current_track_layer != None:
-            self.current_track_layer.visible = state
+        if self.selected_track_layer != None:
+            self.selected_track_layer.visible = state
     
     def _track_filtered(self, tracks):
         self.display_tracks = tracks
@@ -203,15 +205,16 @@ class TrackingWidget(NapariLayersWidget):
         # prepate tracks to display 
         for t in self.display_tracks:
             d_tracks += t.to_list()
-        if self.current_track_layer != None:
-            self.current_track_layer.data = d_tracks
+        if self.selected_track_layer != None:
+            self.selected_track_layer.data = d_tracks
         else:
-            self.current_track_layer = self.viewer.add_tracks(d_tracks, name="Tracks")
+            self.selected_track_layer = self.viewer.add_tracks(d_tracks, name="Tracks")
         
         self.show_mask(False)
     
     def _track_selected(self, track_id):
         track = self.get_track_by_id(track_id)
+        self.selected_track_id = track_id
         if self.single_display_track_layer == None:
             self.single_display_track_layer = self.viewer.add_tracks(track.to_list(), name=f"Selected Track {track_id}")
         else:
@@ -237,10 +240,53 @@ class TrackingWidget(NapariLayersWidget):
         self.plot_widget.draw(d_tracks, "Intensity", multile=True)
 
     def fit_all(self):
-        pass
+        # plot all intensity
+        d_tracks = []
+        for t in self.display_tracks:
+            d_tracks += [self.detect_steps(t.to_list_by_key('intensity_mean'))]
+        self.plot_widget.clear()
+        # np_d_track = np.array(d_tracks)
+        # print(np_d_track.shape)
+        self.plot_widget.draw(d_tracks, "Steps", color=colors['COLOR_2'], multile=True)
 
     def fit_selected(self):
-        pass
+        track = self.get_track_by_id(self.selected_track_id)
+        fit_steps = self.detect_steps(track.to_list_by_key('intensity_mean'))
+        self.plot_widget.draw(fit_steps, "Steps", color=colors['COLOR_2'])
+
+    def detect_steps(self, intensity):
+        # Auto step finder
+        import particle_tracking.stepfindCore as core
+        import particle_tracking.stepfindInOut as sio
+        import particle_tracking.stepfindTools as st
+        if not len(intensity):
+            return
+        dataX = np.array(intensity)
+        FitX = 0 * dataX
+
+        # multipass:
+        for ii in range(0, 3, 1):
+            # work remaining part of data:
+            residuX = dataX - FitX
+            newFitX, _, _, S_curve, best_shot = core.stepfindcore(
+                residuX, 0.1
+            )
+            FitX = st.AppendFitX(newFitX, FitX, dataX)
+            # storage for plotting:
+            if ii == 0:
+                Fits = np.copy(FitX)
+                S_curves = np.copy(S_curve)
+                best_shots = [best_shot]
+            elif best_shot > 0:
+                Fits = np.vstack([Fits, FitX])
+                S_curves = np.vstack([S_curves, S_curve])
+                best_shots = np.hstack([best_shots, best_shot])
+
+        # steps from final fit:
+        # steptable = st.Fit2Steps(dataX, FitX)
+        # self.intensity_plot.set_steps(list(FitX))
+        # self.plot_widget.clear()
+        return FitX
 
     def save(self):
         if not self.tracked_df.empty:
