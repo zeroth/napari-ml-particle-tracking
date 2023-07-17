@@ -141,6 +141,7 @@ class SegmentationWidget(NapariLayersWidget):
             self.training_image = self.image_layer.data
             self.training_mask = self.mask_layer.data
 
+        self.change_indices = set()
         _data = Data2D(self.training_image, self.training_mask)
         _dataset = Dataset2D(_data.images, _data.labels)
         _dataloader = _dataset.get_single_data_loader()
@@ -173,7 +174,7 @@ class SegmentationWidget(NapariLayersWidget):
         if self.combo_mask_layers.count():
             mask_layer_index = self.combo_mask_layers.currentData()
             self.mask_layer = self.viewer.layers[mask_layer_index]
-            tifffile.imwrite(file=file_path[0], data=self.mask_layer.data.astype(np.uint8))
+            tifffile.imwrite(file_path[0], self.mask_layer.data.astype(np.uint8))
         else:
             QMessageBox.warning(self, "Save error", "No mask layer available to save.\nMake sure you have 'Mask' Layer by clicking on 'Generate Mask'. ")
             

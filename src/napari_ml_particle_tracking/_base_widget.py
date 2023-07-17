@@ -21,6 +21,8 @@ class BaseWidget(QWidget):
         self.save_action.triggered.connect(self.saveClicked)
         self.open_action.triggered.connect(self.openClicked)
         self.layout().addWidget(self.toolBar)
+        self.open_action.setVisible(False)
+        self.save_action.setVisible(False)
 
 class NapariLayersWidget(BaseWidget):
     comboBoxUpdated = Signal()

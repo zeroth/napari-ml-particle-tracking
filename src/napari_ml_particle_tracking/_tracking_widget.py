@@ -7,10 +7,14 @@ import copy
 import numpy as np
 import napari
 
-from qtpy.QtWidgets import QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QLabel, QWidget, QListWidget, QListWidgetItem, QSlider, QSpinBox, QDoubleSpinBox
+from qtpy.QtWidgets import QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QLabel, QWidget, QListWidget, QListWidgetItem, QSlider, QSpinBox, QDoubleSpinBox, QFileDialog, QMessageBox
 from qtpy.QtGui import QStandardItemModel
 from qtpy.QtCore import Signal, QItemSelectionModel, QModelIndex, Qt
 from ._base_widget import NapariLayersWidget
+from ._intensity_plot import IntensityPlotWidget
+import pandas as pd
+
+TIME_POINT_SL_MIN = 1
 
 class TrackTableFilterWidget(QWidget):
     track_clicked = Signal(int)
@@ -21,9 +25,9 @@ class TrackTableFilterWidget(QWidget):
 
         self.sl_time_point = QSlider(Qt.Orientation.Horizontal)
         self.sl_time_point.setTracking(False)
-        self.sl_time_point.setMinimum(1)
+        self.sl_time_point.setMinimum(TIME_POINT_SL_MIN)
         # self.sl_time_point.setMaximum(len(self.display_tracks[-1]))
-        self.sl_time_point.setTickPosition(QSlider.TicksAbove)
+        self.sl_time_point.setTickPosition(QSlider.TickPosition.TicksBothSides)
         self.sl_time_point.setTickInterval(1)
         self.lw_tracks = QListWidget()
 
@@ -42,7 +46,7 @@ class TrackTableFilterWidget(QWidget):
     def set_all_tracks(self, tracks):
         self.all_tracks = tracks
         self.display_tracks = copy.deepcopy(tracks)
-        
+        self.sl_time_point.setValue(TIME_POINT_SL_MIN)
         self.populate_tracks()
 
     def _track_clicked(self,item):
@@ -76,6 +80,9 @@ class TrackingWidget(NapariLayersWidget):
     def __init__(self, napari_viewer : napari.viewer.Viewer):
         super().__init__(napari_viewer)
         self.display_tracks = []
+        self.single_display_track = []
+        self.single_display_track_layer = None
+        self.tracked_df = pd.DataFrame()
         self.current_track_layer = None
         self.sb_search_range = QDoubleSpinBox()
         self.sb_search_range.setMinimum(1.0)
@@ -100,9 +107,31 @@ class TrackingWidget(NapariLayersWidget):
         self.table_widget.track_clicked.connect(self._track_selected)
         self.table_widget.track_filtered.connect(self._track_filtered)
 
+        self.plot_widget = IntensityPlotWidget(self.viewer)
+        self.layout().addWidget(self.plot_widget)
+
+        self.btn_plot_all = QPushButton("Plot All Inteisity")
+        self.btn_fit_all = QPushButton("Fit All Step")
+        self.btn_fit_selected = QPushButton("Fit Selected Step")
+        btn_intensity_layout = QHBoxLayout()
+        btn_intensity_layout.addWidget(self.btn_plot_all)
+        btn_intensity_layout.addWidget(self.btn_fit_all)
+        btn_intensity_layout.addWidget(self.btn_fit_selected)
+        self.layout().addLayout(btn_intensity_layout)
+
         # init btns
         self.btn_track.clicked.connect(self.track)
         self.comboBoxUpdated.connect(self.update_btns)
+
+        self.save_action.setVisible(True)
+        self.open_action.setVisible(True)
+        self.saveClicked.connect(self.save)
+        self.openClicked.connect(self.open)
+        
+        self.btn_plot_all.clicked.connect(self.plot_all)
+        self.btn_plot_all.clicked.connect(self.fit_all)
+        self.btn_plot_all.clicked.connect(self.fit_selected)
+        
         self.update_btns()
 
     def update_btns(self):
@@ -112,7 +141,7 @@ class TrackingWidget(NapariLayersWidget):
             self.btn_track.setDisabled(True)
     
     def track(self):
-        from particle_tracking.utils import get_statck_properties, get_tracks, Track, Point
+        from particle_tracking.utils import get_statck_properties, get_tracks
 
         image_layer_index = self.combo_image_layers.currentData()
         image_layer = self.viewer.layers[image_layer_index].data
@@ -124,7 +153,18 @@ class TrackingWidget(NapariLayersWidget):
         search_range = self.sb_search_range.value()
         memory = self.sb_memory.value()
         tracked = get_tracks(main_pd_frame, search_range=search_range, memory=memory)
+        self.tracked_df = tracked
+        self.pd_to_tracks()
 
+    
+    def add_table(self):
+        self.display_tracks = copy.deepcopy(self.tracks)
+        self.table_widget.set_all_tracks(self.tracks)
+        self.display()
+
+    def pd_to_tracks(self):
+        from particle_tracking.utils import Track, Point
+        tracked = self.tracked_df 
         track_ids = tracked['particle'].unique()
         accepted_track_count = 0
         tracks = []
@@ -141,22 +181,16 @@ class TrackingWidget(NapariLayersWidget):
                 points += track.to_points_list()
         self.tracks = track_objs
         self.add_table()
-    
-    def add_table(self):
-        self.display_tracks = copy.deepcopy(self.tracks)
-        self.table_widget.set_all_tracks(self.tracks)
-        self.display()
 
     def get_track_by_id(self, id):
         for track in self.tracks:
             if track.id == id:
                 return track
         return None
-    
-    def _track_selected(self, track_id):
-        track = self.get_track_by_id(track_id)
-        if track != None:
-            self.track_selected.emit(track)
+
+    def show_tracks_layer(self, state):
+        if self.current_track_layer != None:
+            self.current_track_layer.visible = state
     
     def _track_filtered(self, tracks):
         self.display_tracks = tracks
@@ -175,3 +209,52 @@ class TrackingWidget(NapariLayersWidget):
             self.current_track_layer = self.viewer.add_tracks(d_tracks, name="Tracks")
         
         self.show_mask(False)
+    
+    def _track_selected(self, track_id):
+        track = self.get_track_by_id(track_id)
+        if self.single_display_track_layer == None:
+            self.single_display_track_layer = self.viewer.add_tracks(track.to_list(), name=f"Selected Track {track_id}")
+        else:
+            self.single_display_track_layer.data = track.to_list()
+            self.single_display_track_layer.name = f"Selected Track {track_id}"
+        
+        self.show_tracks_layer(False)
+
+        if track != None:
+            self.plot_widget.clear()
+            self.plot_widget.draw(track.to_list_by_key('intensity_mean'), "Intensity")
+
+    
+
+    def plot_all(self):
+        # plot all intensity
+        d_tracks = []
+        for t in self.display_tracks:
+            d_tracks += [t.to_list_by_key('intensity_mean')]
+        self.plot_widget.clear()
+        # np_d_track = np.array(d_tracks)
+        # print(np_d_track.shape)
+        self.plot_widget.draw(d_tracks, "Intensity", multile=True)
+
+    def fit_all(self):
+        pass
+
+    def fit_selected(self):
+        pass
+
+    def save(self):
+        if not self.tracked_df.empty:
+            file_path = QFileDialog.getSaveFileName(self, caption="Save Tracks", directory=str(Path.home()), filter="*.csv")
+            self.tracked_df.to_csv(file_path[0], sep=",")
+        else:
+            QMessageBox.warning(self, "Track Save error", "There are no tracks ")
+
+    def open(self):
+        file_path = QFileDialog.getOpenFileName(self, caption="Open Tracks", directory=str(Path.home()), filter="*.csv")
+        self.tracked_df = pd.read_csv(file_path[0], sep=',')
+        if not self.tracked_df.empty:
+            self.pd_to_tracks()
+        else:
+            QMessageBox.warning(self, "Track Open error", "Csv file is not compatible ")
+
+    

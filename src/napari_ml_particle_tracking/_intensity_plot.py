@@ -13,6 +13,12 @@ import particle_tracking.stepfindCore as core
 import particle_tracking.stepfindInOut as sio
 import particle_tracking.stepfindTools as st
 
+# https://davidmathlogic.com/colorblind #  IBM Design Library
+COLOR_1 = "#DC267F"
+COLOR_2 = "#648FFF"
+COLOR_3 = "#785EF0"
+COLOR_4 = "#FE6100"
+COLOR_5 = "#FFB000"
 
 class IntensityPlotWidget(BaseNapariMPLWidget):
     
@@ -26,18 +32,8 @@ class IntensityPlotWidget(BaseNapariMPLWidget):
         # self._setup_callbacks()
         self.add_single_axes()
         self.data = []
-        self.steps = []
-
-    def set_intensity(self, data):
-        self.data = data
-        self.steps = []
-        self.clear()
-        self.draw()
-    
-    def set_steps(self, steps):
-        self.steps = steps
-        self.clear()
-        self.draw()
+        self.label = None
+        self.color = None
 
     def _on_napari_theme_changed(self) -> None:
         """Update MPL toolbar and axis styling when `napari.Viewer.theme` is changed.
@@ -47,7 +43,7 @@ class IntensityPlotWidget(BaseNapariMPLWidget):
         """
         super()._on_napari_theme_changed()
         self.clear()
-        self.draw()
+        self.draw(self.data, self.label, self.color)
 
     def clear(self) -> None:
         """
@@ -58,36 +54,25 @@ class IntensityPlotWidget(BaseNapariMPLWidget):
         with mplstyle.context(self.mpl_style_sheet_path):
             self.axes.clear()
 
-    def draw(self) -> None:
-        """
-        Re-draw any figures.
-
-        This is a no-op, and is intended for derived classes to override.
-        """
-        """
-        Clear the axes and histogram the currently selected layer/slice.
-        """
-        # if self.data.ndim > 1:
-        #     x = np.arange(len(self.data[0]))
-        # else:
-        #     x = np.arange(len(self.data))
-        
-        # if self.data.ndim > 1:
-        #     for i in self.data.shape[0]:
-        #         self.axes.plot(x, self.data[i], label=f"{i}")
-        # else:
-        #     self.axes.plot(x, self.data, label=f"data")
-
-        if len(self.data):
-            x = np.arange(len(self.data))
-            self.axes.plot(x, self.data, label = "Intensity")
-        
-        if len(self.steps):
-            x = np.arange(len(self.steps))
-            self.axes.plot(x, self.steps, label = "Steps")
-
-
-        self.axes.legend()
+    def draw(self, data, label, color=COLOR_1, multile=False) -> None:
+        from matplotlib.legend_handler import HandlerTuple
+        if len(data):
+            self.data = data
+            self.label = label
+            self.color = color
+            if multile:
+                
+                lines = []
+                for l in range(len(data)):
+                    x = np.arange(len(data[l]))
+                    self.axes.plot(x, data[l],  label=label)
+                    # lines.append(_line)
+                    
+                # self.axes.legend(handles=[lines])
+            else:   
+                x = np.arange(len(self.data))
+                self.axes.plot(x, self.data, label =label, color=color)
+                self.axes.legend()
 
         # needed
         self.canvas.draw()
@@ -96,7 +81,7 @@ class IntensityPlotWidget(BaseNapariMPLWidget):
 class StepFinderWidget(BaseWidget):
     def __init__(self, napari_viewer : napari.viewer.Viewer, parent:QWidget=None) -> None:
         super().__init__(parent)
-        self.setLayout(QVBoxLayout())
+        # self.setLayout(QVBoxLayout())
         self.btn_step_find = QPushButton("Find Steps")
         self.btn_step_find.clicked.connect(self.detect_steps)
         self.intensity_plot = IntensityPlotWidget(napari_viewer)
