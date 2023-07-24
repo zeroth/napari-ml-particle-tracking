@@ -57,6 +57,7 @@ class SegmentationWidget(NapariLayersWidget):
 
         # init btns
         self.open_action.setVisible(False)
+        self.save_action.setVisible(True)
         self.save_action.setDisabled(True)
         self.saveClicked.connect(self.save)
         self.btn_segment.clicked.connect(self.segment)
@@ -91,6 +92,13 @@ class SegmentationWidget(NapariLayersWidget):
             self.sb_epochs.setDisabled(True)
             self.btn_train.setDisabled(True)
             self.save_action.setDisabled(True)
+    
+    def layer_removed(self, event):
+        print(event.type)
+        print(event.value.name)
+        # if self.mask_layer.name == val.name:
+        #     del self.mask_layer
+        #     self.mask_layer = None
     
     def init_ml(self):
         n_epochs = self.sb_epochs.value()
@@ -156,7 +164,7 @@ class SegmentationWidget(NapariLayersWidget):
         
     
     def training_data_collection(self, layer, event):
-        # print(f"Mouse clicked : {layer.name} -> {event.position}")
+        # print(f"Mouse clicked : {layer.name} - {layer.mode}-> {event}")
         self.change_indices.add( int(event.position[0]))
 
     def attach_mask_layer(self):
@@ -177,5 +185,3 @@ class SegmentationWidget(NapariLayersWidget):
             tifffile.imwrite(file_path[0], self.mask_layer.data.astype(np.uint8))
         else:
             QMessageBox.warning(self, "Save error", "No mask layer available to save.\nMake sure you have 'Mask' Layer by clicking on 'Generate Mask'. ")
-            
-    

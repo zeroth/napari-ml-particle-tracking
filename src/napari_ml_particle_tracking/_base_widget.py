@@ -46,9 +46,16 @@ class NapariLayersWidget(BaseWidget):
         # connect
         if self.viewer != None:
             self.viewer.layers.events.changed.connect(self.update_combo)
+            self.viewer.layers.events.changed.connect(self.layer_changed)
+
             self.viewer.layers.events.inserted.connect(self.update_combo)
+            self.viewer.layers.events.inserted.connect(self.layer_inserted)
+
             self.viewer.layers.events.removed.connect(self.update_combo)
+            self.viewer.layers.events.removed.connect(self.layer_removed)
+
             self.viewer.layers.events.moved.connect(self.update_combo)
+            self.viewer.layers.events.moved.connect(self.layer_moved)
 
         self.combo_image_layers.currentIndexChanged.connect(self.comboBoxUpdated)
         self.combo_mask_layers.currentIndexChanged.connect(self.comboBoxUpdated)
@@ -64,6 +71,18 @@ class NapariLayersWidget(BaseWidget):
         
         self.comboBoxUpdated.emit()
     
+    def layer_changed(self, event):
+        pass
+
+    def layer_inserted(self, event):
+        pass
+
+    def layer_removed(self, event):
+        pass
+
+    def layer_moved(self, event):
+        pass
+
     def show_mask(self, state):
         layer_name = self.combo_mask_layers.currentText()
         self.viewer.layers[layer_name].visible = state

@@ -7,7 +7,8 @@ import copy
 import numpy as np
 import napari
 
-from qtpy.QtWidgets import QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QLabel, QWidget, QListWidget, QListWidgetItem, QSlider, QSpinBox, QDoubleSpinBox, QFileDialog, QMessageBox
+from qtpy.QtWidgets import QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QLabel, QWidget, QListWidget, QListWidgetItem, QSpinBox, QDoubleSpinBox, QFileDialog, QMessageBox
+from superqt import QLabeledSlider as QSlider
 from qtpy.QtGui import QStandardItemModel
 from qtpy.QtCore import Signal, QItemSelectionModel, QModelIndex, Qt
 from ._base_widget import NapariLayersWidget
@@ -27,8 +28,8 @@ class TrackTableFilterWidget(QWidget):
         self.sl_time_point.setTracking(False)
         self.sl_time_point.setMinimum(TIME_POINT_SL_MIN)
         # self.sl_time_point.setMaximum(len(self.display_tracks[-1]))
-        self.sl_time_point.setTickPosition(QSlider.TickPosition.TicksBothSides)
-        self.sl_time_point.setTickInterval(1)
+        # self.sl_time_point.setTickPosition(QSlider.TickPosition.TicksBothSides)
+        # self.sl_time_point.setTickInterval(1)
         self.lw_tracks = QListWidget()
 
         self.setLayout(QVBoxLayout())
@@ -243,7 +244,7 @@ class TrackingWidget(NapariLayersWidget):
         # plot all intensity
         d_tracks = []
         for t in self.display_tracks:
-            d_tracks += [self.detect_steps(t.to_list_by_key('intensity_mean'))]
+            d_tracks += [self.detect_steps(t.to_list_by_key('intensity_mean'))[0]]
         self.plot_widget.clear()
         # np_d_track = np.array(d_tracks)
         # print(np_d_track.shape)
@@ -251,8 +252,8 @@ class TrackingWidget(NapariLayersWidget):
 
     def fit_selected(self):
         track = self.get_track_by_id(self.selected_track_id)
-        fit_steps = self.detect_steps(track.to_list_by_key('intensity_mean'))
-        self.plot_widget.draw(fit_steps, "Steps", color=colors['COLOR_2'])
+        fit_steps, step_count = self.detect_steps(track.to_list_by_key('intensity_mean'))
+        self.plot_widget.draw(fit_steps, f"Total Steps = {step_count}", color=colors['COLOR_2'])
 
     def detect_steps(self, intensity):
         # Auto step finder
@@ -283,10 +284,10 @@ class TrackingWidget(NapariLayersWidget):
                 best_shots = np.hstack([best_shots, best_shot])
 
         # steps from final fit:
-        # steptable = st.Fit2Steps(dataX, FitX)
+        steptable = st.Fit2Steps(dataX, FitX)
         # self.intensity_plot.set_steps(list(FitX))
         # self.plot_widget.clear()
-        return FitX
+        return FitX, len(steptable)
 
     def save(self):
         if not self.tracked_df.empty:
