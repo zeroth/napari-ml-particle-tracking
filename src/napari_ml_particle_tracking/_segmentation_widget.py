@@ -165,7 +165,10 @@ class SegmentationWidget(NapariLayersWidget):
     
     def training_data_collection(self, layer, event):
         # print(f"Mouse clicked : {layer.name} - {layer.mode}-> {event}")
-        self.change_indices.add( int(event.position[0]))
+        if layer.mode == "paint":
+            print(f"mode: {layer.mode} - {event.position[0]}")
+            self.change_indices.add( int(event.position[0]))
+            print(self.change_indices)
 
     def attach_mask_layer(self):
         if self.combo_mask_layers.count():

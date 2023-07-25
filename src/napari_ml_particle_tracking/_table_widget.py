@@ -27,19 +27,32 @@ class DataFrameModel(QAbstractTableModel):
         return self.dataframe.shape[0]
 
     def columnCount(self, parent = QModelIndex()) -> int:
+        if self.dataframe.shape[1] == 1:
+            return 2
         return self.dataframe.shape[1]
 
     def data(self, index, role = Qt.DisplayRole)-> QVariant:
         if (not index.isValid()) or (role != Qt.DisplayRole):
             return QVariant()
-        if role == Qt.DisplayRole:
+        col_count = self.dataframe.shape[1]
+        if role == Qt.DisplayRole and col_count > 1:
             return str(self.dataframe.iat[index.row(), index.column()])
+        elif role == Qt.DisplayRole and col_count == 1:
+            if index.column() == 0:
+                return str(self.dataframe.index[index.row()])
+            return str(self.dataframe.iat[index.row(), index.column()-1])
 
     def headerData(self, section, orientation, role = Qt.DisplayRole) -> QVariant:
+        col_count = self.dataframe.shape[1]
+
         if role == Qt.DisplayRole:
-            if orientation == Qt.Orientation.Horizontal:
+            if orientation == Qt.Orientation.Horizontal and col_count > 1:
                 return self.dataframe.columns[section]
-            elif orientation == Qt.Orientation.Vertical:
+            elif orientation == Qt.Orientation.Horizontal and col_count == 1:
+                if section != 0:
+                    return self.dataframe.columns[section-1]
+                return self.dataframe.index.name
+            elif orientation == Qt.Orientation.Vertical and col_count > 1:
                 return str(section)
 
 class DataFrameGroupModel(QAbstractTableModel):
